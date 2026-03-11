@@ -1,0 +1,5 @@
+{
+  "name": "Kavin Unavagam",
+  "description": "A premium restaurant booking and food ordering platform for Tirupattur, featuring bilingual support (Tamil/English) and live locations.",
+  "requestFramePermissions": ["geolocation"]
+}
