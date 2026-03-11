@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { translations, Language } from './translations';
+import { restaurants as initialRestaurants, foods as initialFoods } from './data';
 
 interface Restaurant {
   id: number;
@@ -26,6 +27,8 @@ interface Restaurant {
   rating: number;
   description: string;
   distance?: number;
+  lat: number;
+  lng: number;
 }
 
 interface Food {
@@ -37,25 +40,21 @@ interface Food {
 
 export default function App() {
   const [lang, setLang] = useState<Language>('ta');
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [foods, setFoods] = useState<Food[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>(initialRestaurants);
+  const [foods, setFoods] = useState<Food[]>(initialFoods);
   const [searchQuery, setSearchQuery] = useState('');
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const t = translations[lang];
 
-  useEffect(() => {
-    fetch('/api/restaurants')
-      .then(res => res.json())
-      .then(data => setRestaurants(data));
-
-    fetch('/api/foods')
-      .then(res => res.json())
-      .then(data => setFoods(data));
-
+  const trackLocation = () => {
+    setIsTracking(true);
+    setLocationError(null);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -63,18 +62,46 @@ export default function App() {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
+          setIsTracking(false);
         },
-        (error) => console.error("Error getting location:", error)
+        (error) => {
+          console.error("Error getting location:", error);
+          setIsTracking(false);
+          let errorMsg = "Unable to retrieve your location.";
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMsg = t.locationAccess;
+          }
+          setLocationError(errorMsg);
+          // Fallback to Tirupattur center if blocked
+          if (!userLocation) setUserLocation({ lat: 12.4934, lng: 78.5678 });
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
+    } else {
+      setLocationError("Geolocation is not supported by your browser.");
+      setIsTracking(false);
+      if (!userLocation) setUserLocation({ lat: 12.4934, lng: 78.5678 });
     }
+  };
+
+  useEffect(() => {
+    trackLocation();
   }, []);
 
   useEffect(() => {
     if (userLocation && restaurants.length > 0) {
-      const updated = restaurants.map(r => ({
-        ...r,
-        distance: Math.random() * 5 + 0.5
-      }));
+      const updated = restaurants.map(r => {
+        // Simple Haversine-like distance calculation
+        const dist = Math.sqrt(
+          Math.pow(r.lat - userLocation.lat, 2) + 
+          Math.pow(r.lng - userLocation.lng, 2)
+        ) * 111; // Approx 111km per degree
+        
+        return {
+          ...r,
+          distance: dist
+        };
+      });
       setRestaurants(updated);
     }
   }, [userLocation]);
@@ -114,11 +141,18 @@ export default function App() {
           </div>
 
           {/* Deliver To */}
-          <div className="hidden sm:flex items-center gap-1 border border-transparent hover:border-white p-1 cursor-pointer">
-            <MapPin className="w-4 h-4 mt-2" />
+          <div 
+            onClick={trackLocation}
+            className="hidden sm:flex items-center gap-1 border border-transparent hover:border-white p-1 cursor-pointer"
+          >
+            <MapPin className={`w-4 h-4 mt-2 ${userLocation ? 'text-emerald-400' : 'text-stone-400'}`} />
             <div className="flex flex-col">
-              <span className="text-[12px] text-stone-300 leading-none">{t.deliverTo}</span>
-              <span className="text-[14px] font-bold leading-tight">{t.tirupattur}</span>
+              <span className="text-[12px] text-stone-300 leading-none">
+                {isTracking ? t.tracking : t.deliverTo}
+              </span>
+              <span className="text-[14px] font-bold leading-tight">
+                {userLocation ? t.tirupattur : t.trackLocation}
+              </span>
             </div>
           </div>
 
@@ -292,7 +326,7 @@ export default function App() {
                       </div>
                       {r.distance && (
                         <div className="font-bold text-emerald-700">
-                          {r.distance.toFixed(1)} km away
+                          {r.distance.toFixed(1)} {t.distance === 'Distance' ? 'km' : 'கி.மீ'} {t.nearYou}
                         </div>
                       )}
                     </div>
@@ -307,9 +341,13 @@ export default function App() {
                         {t.bookNow}
                       </button>
                       <button 
-                        onClick={() => setSelectedRestaurant(r)}
-                        className="bg-white border border-stone-300 hover:bg-stone-50 text-stone-900 px-6 py-1.5 rounded-full text-sm font-medium shadow-sm"
+                        onClick={() => {
+                          setSelectedRestaurant(r);
+                          window.scrollTo({ top: document.getElementById('map-sidebar')?.offsetTop || 0, behavior: 'smooth' });
+                        }}
+                        className="bg-white border border-stone-300 hover:bg-stone-50 text-stone-900 px-6 py-1.5 rounded-full text-sm font-medium shadow-sm flex items-center gap-1"
                       >
+                        <MapPin className="w-4 h-4 text-emerald-600" />
                         {t.viewMap}
                       </button>
                     </div>
@@ -319,14 +357,33 @@ export default function App() {
             </div>
 
             {/* Live Map Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1" id="map-sidebar">
               <div className="sticky top-40 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden">
                 <div className="p-4 bg-white border-b border-stone-200">
-                  <h4 className="font-bold flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-emerald-600" />
-                    Live Location Map
-                  </h4>
-                  <p className="text-xs text-stone-500 mt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-emerald-600" />
+                      Live Location Map
+                    </h4>
+                    <button 
+                      onClick={trackLocation}
+                      disabled={isTracking}
+                      className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {isTracking ? (
+                        <>
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                          {t.tracking}
+                        </>
+                      ) : t.refreshLocation}
+                    </button>
+                  </div>
+                  {locationError && (
+                    <p className="text-[10px] text-red-500 mb-2 leading-tight">
+                      {locationError}
+                    </p>
+                  )}
+                  <p className="text-xs text-stone-500">
                     {selectedRestaurant ? `Showing: ${selectedRestaurant.name}` : 'Select a restaurant to see location'}
                   </p>
                 </div>
@@ -337,7 +394,7 @@ export default function App() {
                       height="100%"
                       frameBorder="0"
                       style={{ border: 0 }}
-                      src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(selectedRestaurant.name + ' Tirupattur')}`}
+                      src={`https://maps.google.com/maps?q=${selectedRestaurant.lat},${selectedRestaurant.lng}&z=15&output=embed`}
                       allowFullScreen
                     ></iframe>
                   ) : (
@@ -348,16 +405,28 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                  {/* Mock Map Overlay for Demo */}
-                  {!selectedRestaurant && (
-                    <div className="absolute inset-0 bg-stone-200 flex items-center justify-center">
+                  {/* Mock Map Overlay for Demo if iframe fails */}
+                  <div className="absolute inset-0 pointer-events-none bg-stone-200/50 flex items-center justify-center">
+                    {!selectedRestaurant && (
                       <div className="text-center p-6">
                         <MapPin className="w-12 h-12 text-stone-400 mx-auto mb-2" />
                         <p className="text-stone-500 text-sm">Select a restaurant to view its live location on the map.</p>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
+                {selectedRestaurant && (
+                  <div className="p-3 bg-white border-t border-stone-200">
+                    <a 
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${selectedRestaurant.lat},${selectedRestaurant.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-center bg-emerald-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors"
+                    >
+                      {t.getDirections}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -33,7 +33,12 @@ export const translations = {
     all: "All",
     bestSeller: "Best Seller",
     dealOfTheDay: "Deal of the Day",
-    limitedTime: "Limited time deal"
+    limitedTime: "Limited time deal",
+    trackLocation: "Track My Location",
+    locationAccess: "Please allow location access to see restaurants near you.",
+    refreshLocation: "Refresh Location",
+    tracking: "Tracking...",
+    getDirections: "Get Directions"
   },
   ta: {
     title: "கவின் உணவகம்",
@@ -69,7 +74,12 @@ export const translations = {
     all: "அனைத்தும்",
     bestSeller: "அதிக விற்பனை",
     dealOfTheDay: "இன்றைய சலுகை",
-    limitedTime: "குறிப்பிட்ட நேர சலுகை"
+    limitedTime: "குறிப்பிட்ட நேர சலுகை",
+    trackLocation: "எனது இருப்பிடத்தைக் கண்டறியவும்",
+    locationAccess: "உங்களுக்கு அருகிலுள்ள உணவகங்களைக் காண இருப்பிட அணுகலை அனுமதிக்கவும்.",
+    refreshLocation: "இருப்பிடத்தைப் புதுப்பிக்கவும்",
+    tracking: "கண்டறியப்படுகிறது...",
+    getDirections: "வழிமுறைகளைப் பெறுக"
   }
 };
 
