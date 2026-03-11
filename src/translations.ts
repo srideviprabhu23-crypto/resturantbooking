@@ -24,7 +24,16 @@ export const translations = {
     distance: "Distance",
     calculating: "Calculating distance...",
     nearYou: "Near You",
-    featured: "Featured Restaurants in Tirupattur"
+    featured: "Featured Restaurants in Tirupattur",
+    deliverTo: "Deliver to",
+    tirupattur: "Tirupattur 635601",
+    hello: "Hello, Sign in",
+    account: "Account & Lists",
+    orders: "Returns & Orders",
+    all: "All",
+    bestSeller: "Best Seller",
+    dealOfTheDay: "Deal of the Day",
+    limitedTime: "Limited time deal"
   },
   ta: {
     title: "கவின் உணவகம்",
@@ -51,7 +60,16 @@ export const translations = {
     distance: "தூரம்",
     calculating: "தூரம் கணக்கிடப்படுகிறது...",
     nearYou: "உங்களுக்கு அருகில்",
-    featured: "திருப்பத்தூரில் உள்ள சிறந்த உணவகங்கள்"
+    featured: "திருப்பத்தூரில் உள்ள சிறந்த உணவகங்கள்",
+    deliverTo: "டெலிவரி",
+    tirupattur: "திருப்பத்தூர் 635601",
+    hello: "வணக்கம், உள்நுழைக",
+    account: "கணக்கு மற்றும் பட்டியல்கள்",
+    orders: "திரும்பப் பெறுதல் மற்றும் ஆர்டர்கள்",
+    all: "அனைத்தும்",
+    bestSeller: "அதிக விற்பனை",
+    dealOfTheDay: "இன்றைய சலுகை",
+    limitedTime: "குறிப்பிட்ட நேர சலுகை"
   }
 };
 
